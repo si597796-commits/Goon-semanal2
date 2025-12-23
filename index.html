@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Goon Semanal - 2 Contadores Firebase Sync</title>
+    <style>
+        :root {
+            --color-primary: #208091;
+            --color-primary-hover: #1d7480;
+            --color-background: #fcfcf9;
+            --color-surface: #fffffe;
+            --color-text: #134252;
+            --color-text-secondary: #627c7d;
+            --color-border: rgba(94, 82, 64, 0.2);
+            --color-success: #208091;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--color-background);
+            color: var(--color-text);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+            color: var(--color-text);
+        }
+
+        .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: rgba(33, 128, 141, 0.1);
+            border: 1px solid rgba(33, 128, 141, 0.25);
+            border-radius: 6px;
+            font-size: 13px;
+            color: var(--color-success);
+            font-weight: 500;
+        }
+
+        .status.connected::before {
+            content: '';
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: var(--color-success);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .setup-section {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .setup-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            font-size: 14px;
+            color: var(--color-text);
+            background: var(--color-surface);
+            font-family: inherit;
+            transition: border-color 0.25s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(33, 128, 141, 0.4);
+        }
+
+        button {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            font-family: inherit;
+        }
+
+        .btn-primary {
+            background: var(--color-primary);
+            color: #fcfcf9;
+            width: 100%;
+            margin-top: 15px;
+        }
+
+        .btn-primary:hover {
+            background: var(--color-primary-hover);
+        }
+
+        .btn-secondary {
+            background: rgba(94, 82, 64, 0.12);
+            color: var(--color-text);
+            padding: 10px 16px;
+            margin: 5px;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(94, 82, 64, 0.2);
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .devices-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .device {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+            text-align: center;
+        }
+
+        .device-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 30px;
+        }
+
+        .counters-section {
+            margin-bottom: 30px;
+        }
+
+        .counter-box {
+            background: linear-gradient(135deg, rgba(33, 128, 141, 0.08) 0%, rgba(33, 128, 141, 0.04) 100%);
+            border: 2px solid var(--color-border);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+
+        .counter-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--color-text);
+            margin-bottom: 10px;
+        }
+
+        .counter-value {
+            font-size: 60px;
+            font-weight: 700;
+            color: var(--color-primary);
+            font-family: 'Courier New', monospace;
+            letter-spacing: 3px;
+        }
+
+        .counter-label {
+            font-size: 12px;
+            color: var(--color-text-secondary);
+            margin-top: 8px;
+            text-transform: uppercase;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .total-box {
+            background: rgba(33, 128, 141, 0.15);
+            border: 2px solid var(--color-primary);
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 20px;
+        }
+
+        .total-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--color-primary);
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .total-value {
+            font-size: 50px;
+            font-weight: 700;
+            color: var(--color-primary);
+            font-family: 'Courier New', monospace;
+        }
+
+        .info-box {
+            background: rgba(33, 128, 141, 0.08);
+            border: 1px solid rgba(33, 128, 141, 0.2);
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 12px;
+            color: var(--color-text-secondary);
+            line-height: 1.5;
+        }
+
+        @media (max-width: 768px) {
+            .devices-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .setup-grid {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            .counter-value {
+                font-size: 45px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎯 Goon Semanal - 2 Contadores</h1>
+            <div class="status connected" id="status">Desconectado</div>
+        </header>
+
+        <div class="setup-section" id="setupSection">
+            <h2>⚙️ Configuração Firebase</h2>
+            <div class="setup-grid">
+                <div class="form-group">
+                    <label for="apiKey">API Key</label>
+                    <input type="text" id="apiKey" placeholder="Sua API Key do Firebase">
+                </div>
+                <div class="form-group">
+                    <label for="authDomain">Auth Domain</label>
+                    <input type="text" id="authDomain" placeholder="seu-projeto.firebaseapp.com">
+                </div>
+                <div class="form-group">
+                    <label for="databaseURL">Database URL</label>
+                    <input type="text" id="databaseURL" placeholder="https://seu-projeto.firebaseio.com">
+                </div>
+                <div class="form-group">
+                    <label for="projectId">Project ID</label>
+                    <input type="text" id="projectId" placeholder="seu-projeto">
+                </div>
+            </div>
+            <div class="info-box">
+                💡 Obtenha essas credenciais no <strong>Firebase Console</strong> → Configurações do Projeto → Chaves da Web
+            </div>
+            <button class="btn-primary" onclick="initializeFirebase()">Conectar ao Firebase</button>
+        </div>
+
+        <div class="devices-grid" id="devicesGrid" style="display: none;">
+            <div class="device">
+                <div class="device-label">📱 Dispositivo 1</div>
+                <div class="counters-section">
+                    <div class="counter-box">
+                        <div class="counter-name">👦 Bobinho</div>
+                        <div class="counter-value" id="bobinhoCounter">0</div>
+                        <div class="counter-label">Valor Sincronizado</div>
+                    </div>
+                    <div class="button-group">
+                        <button class="btn-secondary" onclick="incrementBobinho()">+1</button>
+                        <button class="btn-secondary" onclick="decrementBobinho()">-1</button>
+                        <button class="btn-secondary" onclick="resetBobinho()">Reset</button>
+                    </div>
+
+                    <div class="counter-box">
+                        <div class="counter-name">👧 Bobinha</div>
+                        <div class="counter-value" id="bobinhaCounter">0</div>
+                        <div class="counter-label">Valor Sincronizado</div>
+                    </div>
+                    <div class="button-group">
+                        <button class="btn-secondary" onclick="incrementBobinha()">+1</button>
+                        <button class="btn-secondary" onclick="decrementBobinha()">-1</button>
+                        <button class="btn-secondary" onclick="resetBobinha()">Reset</button>
+                    </div>
+
+                    <div class="total-box">
+                        <div class="total-label">📊 Total</div>
+                        <div class="total-value" id="totalCounter">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="device">
+                <div class="device-label">📱 Dispositivo 2</div>
+                <div class="counters-section">
+                    <div class="counter-box">
+                        <div class="counter-name">👦 Bobinho</div>
+                        <div class="counter-value" id="bobinhoCounter2">0</div>
+                        <div class="counter-label">Valor Sincronizado</div>
+                    </div>
+                    <div class="button-group">
+                        <button class="btn-secondary" onclick="incrementBobinho()">+1</button>
+                        <button class="btn-secondary" onclick="decrementBobinho()">-1</button>
+                        <button class="btn-secondary" onclick="resetBobinho()">Reset</button>
+                    </div>
+
+                    <div class="counter-box">
+                        <div class="counter-name">👧 Bobinha</div>
+                        <div class="counter-value" id="bobinhaCounter2">0</div>
+                        <div class="counter-label">Valor Sincronizado</div>
+                    </div>
+                    <div class="button-group">
+                        <button class="btn-secondary" onclick="incrementBobinha()">+1</button>
+                        <button class="btn-secondary" onclick="decrementBobinha()">-1</button>
+                        <button class="btn-secondary" onclick="resetBobinha()">Reset</button>
+                    </div>
+
+                    <div class="total-box">
+                        <div class="total-label">📊 Total</div>
+                        <div class="total-value" id="totalCounter2">0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
+
+        let db;
+        let isConnected = false;
+
+        window.initializeFirebase = function() {
+            const apiKey = document.getElementById('apiKey').value;
+            const authDomain = document.getElementById('authDomain').value;
+            const databaseURL = document.getElementById('databaseURL').value;
+            const projectId = document.getElementById('projectId').value;
+
+            if (!apiKey || !authDomain || !databaseURL || !projectId) {
+                alert('Por favor, preencha todos os campos de configuração!');
+                return;
+            }
+
+            const firebaseConfig = {
+                apiKey: apiKey,
+                authDomain: authDomain,
+                databaseURL: databaseURL,
+                projectId: projectId
+            };
+
+            try {
+                const app = initializeApp(firebaseConfig);
+                db = getDatabase(app);
+                
+                isConnected = true;
+                updateConnectionStatus(true);
+                document.getElementById('setupSection').style.display = 'none';
+                document.getElementById('devicesGrid').style.display = 'grid';
+                startListening();
+            } catch (error) {
+                alert('Erro ao conectar: ' + error.message);
+            }
+        };
+
+        window.incrementBobinho = function() {
+            if (!isConnected) {
+                alert('Não conectado ao Firebase');
+                return;
+            }
+            const currentValue = parseInt(document.getElementById('bobinhoCounter').textContent) || 0;
+            set(ref(db, 'bobinho'), currentValue + 1);
+        };
+
+        window.decrementBobinho = function() {
+            if (!isConnected) {
+                alert('Não conectado ao Firebase');
+                return;
+            }
+            const currentValue = parseInt(document.getElementById('bobinhoCounter').textContent) || 0;
+            set(ref(db, 'bobinho'), currentValue - 1);
+        };
+
+        window.resetBobinho = function() {
+            if (!isConnected) {
+                alert('Não conectado ao Firebase');
+                return;
+            }
+            set(ref(db, 'bobinho'), 0);
+        };
+
+        window.incrementBobinha = function() {
+            if (!isConnected) {
+                alert('Não conectado ao Firebase');
+                return;
+            }
+            const currentValue = parseInt(document.getElementById('bobinhaCounter').textContent) || 0;
+            set(ref(db, 'bobinha'), currentValue + 1);
+        };
+
+        window.decrementBobinha = function() {
+            if (!isConnected) {
+                alert('Não conectado ao Firebase');
+                return;
+            }
+            const currentValue = parseInt(document.getElementById('bobinhaCounter').textContent) || 0;
+            set(ref(db, 'bobinha'), currentValue - 1);
+        };
+
+        window.resetBobinha = function() {
+            if (!isConnected) {
+                alert('Não conectado ao Firebase');
+                return;
+            }
+            set(ref(db, 'bobinha'), 0);
+        };
+
+        function updateConnectionStatus(connected) {
+            const status = document.getElementById('status');
+            status.className = connected ? 'status connected' : 'status';
+            status.textContent = connected ? '● Conectado' : '● Desconectado';
+        }
+
+        function updateDisplay() {
+            onValue(ref(db, 'bobinho'), (snapshot) => {
+                const valor = snapshot.val() || 0;
+                document.getElementById('bobinhoCounter').textContent = valor;
+                document.getElementById('bobinhoCounter2').textContent = valor;
+                updateTotal();
+            });
+
+            onValue(ref(db, 'bobinha'), (snapshot) => {
+                const valor = snapshot.val() || 0;
+                document.getElementById('bobinhaCounter').textContent = valor;
+                document.getElementById('bobinhaCounter2').textContent = valor;
+                updateTotal();
+            });
+        }
+
+        function updateTotal() {
+            const bobinho = parseInt(document.getElementById('bobinhoCounter').textContent) || 0;
+            const bobinha = parseInt(document.getElementById('bobinhaCounter').textContent) || 0;
+            const total = bobinho + bobinha;
+            document.getElementById('totalCounter').textContent = total;
+            document.getElementById('totalCounter2').textContent = total;
+        }
+
+        function startListening() {
+            updateDisplay();
+        }
+    </script>
+</body>
+</html>
